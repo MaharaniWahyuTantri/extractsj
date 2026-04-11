@@ -3,1416 +3,686 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SJ Extractor — Rekap Nopol & Kuantum</title>
+<title>SJ Extractor — Rekap Surat Jalan</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #18181f;
-    --border: #2a2a38;
-    --accent: #f5c542;
-    --accent2: #ff6b35;
-    --text: #e8e8f0;
-    --text-muted: #6b6b88;
-    --success: #22d3a5;
-    --danger: #ff4d6d;
-    --mono: 'Space Mono', monospace;
-    --sans: 'Syne', sans-serif;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Background grid */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(245,197,66,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(245,197,66,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* ===== HEADER ===== */
-  header {
-    position: relative;
-    z-index: 10;
-    padding: 32px 40px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(10,10,15,0.9);
-    backdrop-filter: blur(12px);
-    position: sticky;
-    top: 0;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .logo-icon {
-    width: 44px; height: 44px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    box-shadow: 0 0 24px rgba(245,197,66,0.4);
-  }
-
-  .logo-text h1 {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: var(--text);
-  }
-
-  .logo-text span {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: var(--mono);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .header-badge {
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 6px 14px;
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    color: var(--text-muted);
-  }
-
-  /* ===== MAIN LAYOUT ===== */
-  main {
-    position: relative;
-    z-index: 1;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 40px 80px;
-  }
-
-  /* ===== UPLOAD ZONE ===== */
-  .upload-section {
-    margin-bottom: 40px;
-  }
-
-  .section-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--accent);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 16px;
-    padding: 60px 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: var(--surface);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .drop-zone::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 50%, rgba(245,197,66,0.05) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: var(--surface2);
-  }
-
-  .drop-zone:hover::before, .drop-zone.drag-over::before {
-    opacity: 1;
-  }
-
-  .drop-zone.drag-over {
-    transform: scale(1.01);
-    box-shadow: 0 0 40px rgba(245,197,66,0.15);
-  }
-
-  .drop-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    filter: grayscale(1);
-    transition: filter 0.3s;
-  }
-
-  .drop-zone:hover .drop-icon { filter: grayscale(0); }
-
-  .drop-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-
-  .drop-sub {
-    font-size: 14px;
-    color: var(--text-muted);
-    font-family: var(--mono);
-    margin-bottom: 24px;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-family: var(--sans);
-    font-weight: 700;
-    font-size: 14px;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    text-decoration: none;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #0a0a0f;
-  }
-
-  .btn-primary:hover {
-    background: #ffd166;
-    box-shadow: 0 0 24px rgba(245,197,66,0.4);
-    transform: translateY(-1px);
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .btn-outline:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .btn-danger {
-    background: rgba(255,77,109,0.1);
-    color: var(--danger);
-    border: 1px solid rgba(255,77,109,0.3);
-  }
-
-  .btn-danger:hover {
-    background: rgba(255,77,109,0.2);
-  }
-
-  .btn-success {
-    background: var(--success);
-    color: #0a0a0f;
-  }
-
-  .btn-success:hover {
-    background: #34ebb8;
-    box-shadow: 0 0 24px rgba(34,211,165,0.3);
-    transform: translateY(-1px);
-  }
-
-  #fileInput { display: none; }
-
-  /* ===== FILE LIST ===== */
-  .file-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .file-chip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: var(--mono);
-  }
-
-  .file-chip .chip-icon { color: var(--accent); }
-  .file-chip .chip-size { color: var(--text-muted); font-size: 11px; }
-  .file-chip .chip-remove {
-    cursor: pointer;
-    color: var(--text-muted);
-    transition: color 0.2s;
-  }
-  .file-chip .chip-remove:hover { color: var(--danger); }
-
-  /* ===== PROGRESS ===== */
-  .progress-bar {
-    height: 4px;
-    background: var(--border);
-    border-radius: 100px;
-    overflow: hidden;
-    margin: 20px 0;
-    display: none;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 100px;
-    transition: width 0.3s;
-    width: 0%;
-  }
-
-  .progress-label {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-    display: none;
-  }
-
-  /* ===== STATS ===== */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
-  }
-
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-
-  .stat-card:hover { border-color: var(--accent); }
-
-  .stat-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), transparent);
-  }
-
-  .stat-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-
-  .stat-value {
-    font-size: 32px;
-    font-weight: 800;
-    color: var(--accent);
-    font-family: var(--mono);
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-
-  .stat-sub {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  /* ===== TOOLBAR ===== */
-  .toolbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-
-  .search-box {
-    flex: 1;
-    min-width: 200px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 16px;
-    transition: border-color 0.2s;
-  }
-
-  .search-box:focus-within { border-color: var(--accent); }
-
-  .search-box input {
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    flex: 1;
-  }
-
-  .search-box input::placeholder { color: var(--text-muted); }
-
-  .filter-select {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 16px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    outline: none;
-    cursor: pointer;
-    transition: border-color 0.2s;
-  }
-
-  .filter-select:focus { border-color: var(--accent); }
-  .filter-select option { background: var(--surface2); }
-
-  /* ===== TABLE ===== */
-  .table-wrapper {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .table-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .table-title {
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .table-count {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-muted);
-    background: var(--surface2);
-    padding: 4px 12px;
-    border-radius: 100px;
-  }
-
-  .table-scroll {
-    overflow-x: auto;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  thead tr {
-    background: var(--surface2);
-  }
-
-  th {
-    padding: 14px 20px;
-    text-align: left;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.2s;
-  }
-
-  th:hover { color: var(--accent); }
-
-  th.sort-asc::after { content: ' ↑'; color: var(--accent); }
-  th.sort-desc::after { content: ' ↓'; color: var(--accent); }
-
-  td {
-    padding: 14px 20px;
-    border-top: 1px solid var(--border);
-    white-space: nowrap;
-    font-family: var(--mono);
-  }
-
-  tr:hover td {
-    background: rgba(245,197,66,0.03);
-  }
-
-  .td-dokumen { color: var(--accent); font-weight: 700; font-size: 12px; }
-  .td-tanggal { color: var(--text-muted); }
-  .td-nopol {
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  .nopol-badge {
-    display: inline-block;
-    background: rgba(245,197,66,0.1);
-    border: 1px solid rgba(245,197,66,0.3);
-    color: var(--accent);
-    padding: 3px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    letter-spacing: 1px;
-  }
-
-  .td-kuantum { color: var(--success); font-weight: 700; }
-
-  .empty-state {
-    padding: 80px 40px;
-    text-align: center;
-    color: var(--text-muted);
-  }
-
-  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
-  .empty-text { font-size: 16px; margin-bottom: 8px; color: var(--text); }
-  .empty-sub { font-size: 13px; font-family: var(--mono); }
-
-  /* ===== PAGINATION ===== */
-  .pagination {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .page-info {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .page-btns {
-    display: flex;
-    gap: 6px;
-  }
-
-  .page-btn {
-    width: 36px; height: 36px;
-    border-radius: 6px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .page-btn:hover, .page-btn.active {
-    background: var(--accent);
-    color: #0a0a0f;
-    border-color: var(--accent);
-  }
-
-  /* ===== EXPORT SECTION ===== */
-  .export-bar {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 24px;
-  }
-
-  /* ===== TOAST ===== */
-  .toast {
-    position: fixed;
-    bottom: 32px;
-    right: 32px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 20px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    z-index: 999;
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-
-  .toast.show {
-    transform: translateY(0);
-    opacity: 1;
-  }
-
-  .toast.success { border-color: rgba(34,211,165,0.4); }
-  .toast.error { border-color: rgba(255,77,109,0.4); }
-
-  /* ===== MANUAL ENTRY MODAL ===== */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px);
-    z-index: 100;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-    width: 500px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .modal-title {
-    font-size: 18px;
-    font-weight: 800;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .form-group {
-    margin-bottom: 16px;
-  }
-
-  .form-label {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    display: block;
-  }
-
-  .form-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .form-input:focus { border-color: var(--accent); }
-
-  .modal-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 24px;
-    justify-content: flex-end;
-  }
-
-  /* ===== DUPLICATE HIGHLIGHT ===== */
-  tr.duplicate td { background: rgba(255,77,109,0.05); }
-  tr.duplicate .nopol-badge {
-    border-color: rgba(255,77,109,0.4);
-    background: rgba(255,77,109,0.1);
-    color: var(--danger);
-  }
-
-  .dup-tag {
-    font-size: 9px;
-    background: var(--danger);
-    color: white;
-    padding: 1px 6px;
-    border-radius: 3px;
-    margin-left: 6px;
-    vertical-align: middle;
-  }
-
-  /* ===== SCROLLBAR ===== */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 768px) {
-    header { padding: 20px; }
-    main { padding: 20px; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .toolbar { flex-direction: column; align-items: stretch; }
-    .search-box { min-width: unset; }
-  }
-
-  /* ===== ANIMATIONS ===== */
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-in {
-    animation: fadeInUp 0.4s ease forwards;
-  }
-
-  tr { animation: fadeInUp 0.3s ease forwards; }
-
-  .shimmer {
-    background: linear-gradient(90deg, var(--surface) 0%, var(--surface2) 50%, var(--surface) 100%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-  }
-
-  @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
+:root {
+  --blue:#2563EB;--blue-l:#EFF6FF;--blue-m:#BFDBFE;--blue-d:#1E40AF;
+  --green:#16A34A;--green-l:#F0FDF4;--green-m:#BBF7D0;
+  --amber:#D97706;--amber-l:#FFFBEB;--amber-m:#FDE68A;
+  --red:#DC2626;--red-l:#FEF2F2;--red-m:#FECACA;
+  --g50:#F8FAFC;--g100:#F1F5F9;--g200:#E2E8F0;--g300:#CBD5E1;
+  --g400:#94A3B8;--g500:#64748B;--g700:#334155;--g900:#0F172A;
+  --white:#FFFFFF;
+  --r:12px;--rs:8px;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.05);
+  --shl:0 4px 24px rgba(0,0,0,.12);
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Plus Jakarta Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--g50);color:var(--g900);min-height:100vh;}
+
+/* HEADER */
+header{background:var(--white);border-bottom:1px solid var(--g200);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.hl{display:flex;align-items:center;gap:12px;}
+.lm{width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800;font-family:var(--mono);letter-spacing:-1px;flex-shrink:0;}
+.ln{font-size:17px;font-weight:800;color:var(--g900);letter-spacing:-.3px;}
+.ls{font-size:12px;color:var(--g500);font-family:var(--mono);}
+.hbadge{font-size:11px;font-family:var(--mono);background:var(--blue-l);color:var(--blue-d);padding:4px 12px;border-radius:100px;border:1px solid var(--blue-m);font-weight:600;}
+
+/* LAYOUT */
+main{max-width:1320px;margin:0 auto;padding:28px 20px 80px;}
+
+/* SECTION */
+.sec{margin-bottom:24px;}
+.sh{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.st{font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1.2px;font-family:var(--mono);}
+.sl{flex:1;height:1px;background:var(--g200);}
+
+/* UPLOAD CARD */
+.ucard{background:var(--white);border:1px solid var(--g200);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);}
+.dz{padding:48px 40px;text-align:center;cursor:pointer;transition:all .2s;border:2px dashed transparent;}
+.dz:hover{background:var(--g50);}
+.dz.drag-over{background:var(--blue-l);border-color:var(--blue);}
+.diw{width:68px;height:68px;background:var(--blue-l);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:30px;transition:transform .2s;}
+.dz:hover .diw{transform:scale(1.06);}
+.dz.drag-over .diw{transform:scale(1.1);}
+.dt{font-size:18px;font-weight:700;margin-bottom:6px;}
+.ds{font-size:13px;color:var(--g400);font-family:var(--mono);margin-bottom:22px;}
+#fileInput{display:none;}
+
+/* BTNS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;text-decoration:none;}
+.btn:active{transform:scale(.97);}
+.bp{background:var(--blue);color:#fff;}
+.bp:hover{background:var(--blue-d);box-shadow:0 4px 12px rgba(37,99,235,.35);}
+.bg{background:var(--green);color:#fff;font-size:14px;padding:11px 26px;}
+.bg:hover{background:#15803d;box-shadow:0 4px 14px rgba(22,163,74,.3);}
+.bo{background:var(--white);color:var(--g700);border:1px solid var(--g200);}
+.bo:hover{border-color:var(--g400);background:var(--g50);}
+.br{background:var(--red-l);color:var(--red);border:1px solid var(--red-m);}
+.br:hover{background:var(--red-m);}
+.ba{background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-m);}
+.ba:hover{background:var(--amber-m);}
+.bgh{background:transparent;color:var(--g700);border:1px solid var(--g200);}
+.bgh:hover{background:var(--g100);}
+
+/* FILE QUEUE */
+.fq{padding:14px 18px;border-top:1px solid var(--g100);background:var(--g50);display:none;}
+.fqt{font-size:11px;font-weight:700;color:var(--g400);margin-bottom:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;}
+.fchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.fchip{display:flex;align-items:center;gap:7px;padding:5px 11px;background:var(--white);border:1px solid var(--g200);border-radius:7px;font-size:12px;font-family:var(--mono);color:var(--g700);}
+.cn{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.csz{color:var(--g400);font-size:11px;}
+.cdel{color:var(--g400);cursor:pointer;font-size:15px;line-height:1;transition:color .15s;}
+.cdel:hover{color:var(--red);}
+.prow{display:flex;align-items:center;gap:10px;}
+
+/* PROGRESS */
+.pw{padding:14px 18px;border-top:1px solid var(--g100);background:var(--white);display:none;}
+.pt{display:flex;justify-content:space-between;margin-bottom:7px;font-size:13px;}
+.pm{color:var(--g700);font-weight:600;}
+.pp{color:var(--blue);font-family:var(--mono);font-weight:700;}
+.ptrk{height:6px;background:var(--g100);border-radius:100px;overflow:hidden;}
+.pfill{height:100%;background:linear-gradient(90deg,var(--blue),#60A5FA);border-radius:100px;width:0%;transition:width .3s ease;}
+
+/* DONE BAR */
+.done{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--green-l);border:1px solid var(--green-m);border-radius:var(--r);margin-bottom:22px;flex-wrap:wrap;}
+.donemsg{flex:1;font-size:14px;font-weight:600;color:var(--green);}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.scard{background:var(--white);border:1px solid var(--g200);border-radius:var(--r);padding:18px;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.sacc{position:absolute;top:0;left:0;right:0;height:3px;}
+.sac-blue{background:var(--blue);}
+.sac-green{background:var(--green);}
+.sac-amber{background:var(--amber);}
+.sac-red{background:var(--red);}
+.sac-purple{background:#7C3AED;}
+.slbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:8px;}
+.sval{font-size:26px;font-weight:800;color:var(--g900);font-family:var(--mono);line-height:1.1;margin-bottom:3px;}
+.ssub{font-size:11px;color:var(--g400);}
+
+/* TOOLBAR */
+.tb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.sw{flex:1;min-width:160px;position:relative;}
+.sico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--g400);font-size:13px;}
+.sinp{width:100%;height:38px;padding:0 11px 0 34px;border:1px solid var(--g200);border-radius:var(--rs);background:var(--white);color:var(--g900);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;}
+.sinp:focus{border-color:var(--blue);}
+.sinp::placeholder{color:var(--g400);}
+.fsel{height:38px;padding:0 11px;border:1px solid var(--g200);border-radius:var(--rs);background:var(--white);color:var(--g700);font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;transition:border-color .15s;}
+.fsel:focus{border-color:var(--blue);}
+
+/* TABLE CARD */
+.tcard{background:var(--white);border:1px solid var(--g200);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);}
+.tbar{padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.tbtit{font-size:15px;font-weight:700;color:var(--g900);}
+.tcnt{font-size:12px;font-family:var(--mono);font-weight:600;background:var(--g100);color:var(--g500);padding:3px 11px;border-radius:100px;}
+.tscroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{padding:10px 14px;background:var(--g50);text-align:left;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--g400);border-bottom:1px solid var(--g200);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s;}
+thead th:hover{color:var(--blue);}
+thead th.sa::after{content:' ↑';color:var(--blue);}
+thead th.sd::after{content:' ↓';color:var(--blue);}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--g100);font-family:var(--mono);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--blue-l);}
+tbody tr.idup td{background:#FFFBEB;}
+tbody tr.idup:hover td{background:#FEF9C3;}
+
+.tno{color:var(--g400);font-size:11px;}
+.tdok{color:var(--blue-d);font-weight:700;font-size:12px;}
+.tdate{color:var(--g500);}
+.npill{display:inline-flex;align-items:center;gap:5px;background:var(--g100);border:1px solid var(--g200);border-radius:5px;padding:3px 9px;font-size:12px;font-weight:700;color:var(--g700);letter-spacing:.4px;}
+.dpill{font-size:9px;font-weight:800;background:var(--red);color:#fff;padding:1px 5px;border-radius:3px;}
+.tkuan{color:var(--green);font-weight:700;}
+.tgap{color:var(--g700);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tsrc{color:var(--g400);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.acell{display:flex;gap:5px;}
+.bico{width:28px;height:28px;border-radius:5px;border:1px solid var(--g200);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;color:var(--g500);}
+.bico:hover{border-color:var(--blue);background:var(--blue-l);color:var(--blue);}
+.bico.del:hover{border-color:var(--red);background:var(--red-l);color:var(--red);}
+
+/* EMPTY */
+.empty{padding:60px 40px;text-align:center;}
+.ei{font-size:36px;margin-bottom:12px;opacity:.45;}
+.et{font-size:15px;font-weight:700;color:var(--g700);margin-bottom:5px;}
+.es{font-size:12px;color:var(--g400);font-family:var(--mono);}
+
+/* PAGINATION */
+.pbar{padding:12px 18px;border-top:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.pinf{font-size:12px;color:var(--g400);font-family:var(--mono);}
+.pbtns{display:flex;gap:4px;}
+.pbtn{min-width:32px;height:32px;border-radius:5px;background:var(--white);border:1px solid var(--g200);color:var(--g700);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 7px;transition:all .15s;}
+.pbtn:hover{border-color:var(--blue);color:var(--blue);}
+.pbtn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+/* EXPORT BAR */
+.ebar{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;padding:14px 18px;background:var(--white);border:1px solid var(--g200);border-radius:var(--r);align-items:center;box-shadow:var(--sh);}
+.elbl{font-size:11px;font-weight:700;color:var(--g400);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-right:4px;}
+
+/* MODAL */
+.mbg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;}
+.mbg.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--r);padding:26px;width:460px;max-width:96vw;box-shadow:var(--shl);max-height:90vh;overflow-y:auto;}
+.mtit{font-size:16px;font-weight:800;margin-bottom:20px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg{margin-bottom:12px;}
+.fl{display:block;font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:5px;}
+.fi{width:100%;height:36px;padding:0 11px;border:1px solid var(--g200);border-radius:var(--rs);background:var(--white);color:var(--g900);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .15s;}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.mfooter{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:26px;right:26px;background:var(--g900);color:#fff;padding:11px 16px;border-radius:9px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;z-index:999;transform:translateY(70px);opacity:0;transition:all .25s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--shl);max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.tg{background:var(--green);}
+.tr{background:var(--red);}
+.tb2{background:var(--blue);}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  header{padding:0 14px;}
+  main{padding:16px 10px 60px;}
+  .sgrid{grid-template-columns:repeat(2,1fr);}
+  .frow{grid-template-columns:1fr;}
+  .dz{padding:32px 16px;}
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">
-    <div class="logo-icon">📋</div>
-    <div class="logo-text">
-      <h1>SJ Extractor</h1>
-      <span>Rekap Nopol & Kuantum</span>
+  <div class="hl">
+    <div class="lm">SJ</div>
+    <div>
+      <div class="ln">SJ Extractor</div>
+      <div class="ls">Rekap Nopol &amp; Kuantum</div>
     </div>
   </div>
-  <div class="header-badge">v2.0 — 100% Browser</div>
+  <div class="hbadge">100% Browser — No Server</div>
 </header>
 
 <main>
 
-  <!-- UPLOAD -->
-  <div class="upload-section">
-    <div class="section-label">Upload Dokumen PDF</div>
-    <div class="drop-zone" id="dropZone">
-      <div class="drop-icon">📄</div>
-      <div class="drop-title">Drag & Drop file PDF di sini</div>
-      <div class="drop-sub">Bisa banyak file sekaligus • Format PDF surat jalan</div>
-      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-        📂 Pilih File
-      </button>
+<!-- UPLOAD -->
+<div class="sec" id="uploadSec">
+  <div class="sh"><div class="st">Upload Surat Jalan</div><div class="sl"></div></div>
+  <div class="ucard">
+    <div class="dz" id="dropZone">
+      <div class="diw">📄</div>
+      <div class="dt">Drag &amp; Drop file PDF di sini</div>
+      <div class="ds">Bisa banyak file sekaligus &bull; Format surat jalan ADA</div>
+      <button class="btn bp" onclick="document.getElementById('fileInput').click()">📂 Pilih File PDF</button>
       <input type="file" id="fileInput" accept=".pdf" multiple>
     </div>
-    <div class="file-list" id="fileList"></div>
-    <div class="progress-label" id="progressLabel">Memproses...</div>
-    <div class="progress-bar" id="progressBar">
-      <div class="progress-fill" id="progressFill"></div>
+    <div class="fq" id="fileQueue">
+      <div class="fqt">File siap diproses</div>
+      <div class="fchips" id="fileChips"></div>
+      <div class="prow">
+        <button class="btn bg" onclick="startProcessing()">⚙️ Proses Sekarang</button>
+        <button class="btn bgh" onclick="clearQueue()">Batal</button>
+        <span id="queueCount" style="font-size:12px;color:var(--g400);font-family:var(--mono);"></span>
+      </div>
+    </div>
+    <div class="pw" id="progWrap">
+      <div class="pt">
+        <span class="pm" id="progMsg">Memproses...</span>
+        <span class="pp" id="progPct">0%</span>
+      </div>
+      <div class="ptrk"><div class="pfill" id="progFill"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- DONE BAR -->
+<div class="done" id="doneBar" style="display:none;">
+  <span style="font-size:20px;">✅</span>
+  <div class="donemsg" id="doneMsg">Data berhasil dimuat.</div>
+  <button class="btn bo" onclick="addMore()">➕ Tambah File Baru</button>
+  <button class="btn br" onclick="resetAll()">🔄 Reset &amp; Mulai Ulang</button>
+</div>
+
+<!-- STATS -->
+<div class="sec" id="statsSec" style="display:none;">
+  <div class="sh"><div class="st">Statistik</div><div class="sl"></div></div>
+  <div class="sgrid">
+    <div class="scard"><div class="sacc sac-blue"></div><div class="slbl">Total Dokumen</div><div class="sval" id="sStat">0</div><div class="ssub">record ditemukan</div></div>
+    <div class="scard"><div class="sacc sac-green"></div><div class="slbl">Unik Nopol</div><div class="sval" id="sNopol">0</div><div class="ssub">kendaraan berbeda</div></div>
+    <div class="scard"><div class="sacc sac-amber"></div><div class="slbl">Total Kuantum</div><div class="sval" id="sKuantum">0</div><div class="ssub">liter / unit</div></div>
+    <div class="scard"><div class="sacc sac-red"></div><div class="slbl">Duplikat Nopol</div><div class="sval" id="sDup">0</div><div class="ssub">perlu dicek</div></div>
+    <div class="scard"><div class="sacc sac-purple"></div><div class="slbl">File Diproses</div><div class="sval" id="sFiles">0</div><div class="ssub">PDF berhasil</div></div>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="sec" id="tableSec" style="display:none;">
+  <div class="sh">
+    <div class="st">Tabel Data</div>
+    <div class="sl"></div>
+    <button class="btn bo" onclick="openModal(null)" style="margin-left:8px;">➕ Tambah Manual</button>
+  </div>
+
+  <div class="tb">
+    <div class="sw">
+      <span class="sico">🔍</span>
+      <input class="sinp" id="searchInput" placeholder="Cari dokumen, nopol, gapoktan...">
+    </div>
+    <select class="fsel" id="filterNopol"><option value="">Semua Nopol</option></select>
+    <input type="date" class="fsel" id="filterFrom" title="Dari tanggal" style="width:148px;">
+    <input type="date" class="fsel" id="filterTo" title="Sampai tanggal" style="width:148px;">
+    <select class="fsel" id="filterDup">
+      <option value="">Semua Data</option>
+      <option value="dup">Duplikat Saja</option>
+      <option value="ok">Unik Saja</option>
+    </select>
+    <select class="fsel" id="pageSize">
+      <option value="25">25 / hal</option>
+      <option value="50">50 / hal</option>
+      <option value="100">100 / hal</option>
+      <option value="all">Semua</option>
+    </select>
+  </div>
+
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbtit">Rekap Surat Jalan</div>
+      <span class="tcnt" id="tableCount">0 record</span>
+    </div>
+    <div class="tscroll">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th onclick="sortBy('no')">#</th>
+            <th onclick="sortBy('dokumen')">No Dokumen</th>
+            <th onclick="sortBy('tanggal')">Tanggal</th>
+            <th onclick="sortBy('nopol')">Nopol</th>
+            <th onclick="sortBy('gapoktan')">Gapoktan / Pengirim</th>
+            <th onclick="sortBy('kuantum')">Kuantum</th>
+            <th onclick="sortBy('sumber')">Sumber File</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty" style="display:none;">
+      <div class="ei">📭</div>
+      <div class="et">Tidak ada data ditemukan</div>
+      <div class="es">Coba ubah filter atau kata kunci pencarian</div>
+    </div>
+    <div class="pbar" id="pagiBar" style="display:none;">
+      <div class="pinf" id="pagiInfo"></div>
+      <div class="pbtns" id="pagiBtns"></div>
     </div>
   </div>
 
-  <!-- STATS -->
-  <div id="statsSection" style="display:none;">
-    <div class="section-label">Statistik</div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Dokumen</div>
-        <div class="stat-value" id="statTotal">0</div>
-        <div class="stat-sub">record ditemukan</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Unik Nopol</div>
-        <div class="stat-value" id="statNopol">0</div>
-        <div class="stat-sub">kendaraan berbeda</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Kuantum</div>
-        <div class="stat-value" id="statKuantum">0</div>
-        <div class="stat-sub">liter / unit</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Duplikat Nopol</div>
-        <div class="stat-value" id="statDup">0</div>
-        <div class="stat-sub">perlu diverifikasi</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">File Diproses</div>
-        <div class="stat-value" id="statFiles">0</div>
-        <div class="stat-sub">PDF berhasil dibaca</div>
-      </div>
-    </div>
+  <div class="ebar">
+    <span class="elbl">Export:</span>
+    <button class="btn bp" onclick="exportExcel()">📊 Excel (.xlsx)</button>
+    <button class="btn bo" onclick="exportCSV()">📄 CSV</button>
+    <button class="btn bo" onclick="exportJSON()">{ } JSON</button>
+    <button class="btn bo" onclick="copyClip()">📋 Clipboard</button>
+    <div style="flex:1;"></div>
+    <button class="btn ba" onclick="resetAll()">🔄 Reset &amp; Mulai Ulang</button>
   </div>
-
-  <!-- TOOLBAR -->
-  <div id="tableSection" style="display:none;">
-    <div class="section-label">Tabel Data</div>
-
-    <div class="toolbar">
-      <div class="search-box">
-        <span>🔍</span>
-        <input type="text" id="searchInput" placeholder="Cari dokumen, nopol, tanggal...">
-      </div>
-      <select class="filter-select" id="filterNopol">
-        <option value="">Semua Nopol</option>
-      </select>
-      <select class="filter-select" id="filterDup">
-        <option value="">Semua Data</option>
-        <option value="dup">Duplikat Saja</option>
-        <option value="unique">Unik Saja</option>
-      </select>
-      <select class="filter-select" id="pageSize">
-        <option value="20">20 / halaman</option>
-        <option value="50">50 / halaman</option>
-        <option value="100">100 / halaman</option>
-        <option value="all">Semua</option>
-      </select>
-      <button class="btn btn-outline" onclick="openModal()">➕ Tambah Manual</button>
-      <button class="btn btn-danger" onclick="clearAll()">🗑 Hapus Semua</button>
-    </div>
-
-    <!-- TABLE -->
-    <div class="table-wrapper">
-      <div class="table-header">
-        <div class="table-title">Data Rekap Surat Jalan</div>
-        <div class="table-count" id="tableCount">0 record</div>
-      </div>
-      <div class="table-scroll">
-        <table id="dataTable">
-          <thead>
-            <tr>
-              <th onclick="sortBy('no')">#</th>
-              <th onclick="sortBy('dokumen')">No Dokumen</th>
-              <th onclick="sortBy('tanggal')">Tanggal</th>
-              <th onclick="sortBy('nopol')">Nopol</th>
-              <th onclick="sortBy('kuantum')">Kuantum</th>
-              <th onclick="sortBy('sumber')">Sumber File</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-      <div id="emptyState" class="empty-state" style="display:none;">
-        <div class="empty-icon">📭</div>
-        <div class="empty-text">Tidak ada data ditemukan</div>
-        <div class="empty-sub">Coba ubah filter atau kata kunci pencarian</div>
-      </div>
-      <div class="pagination" id="paginationBar">
-        <div class="page-info" id="pageInfo"></div>
-        <div class="page-btns" id="pageBtns"></div>
-      </div>
-    </div>
-
-    <!-- EXPORT -->
-    <div class="export-bar">
-      <button class="btn btn-success" onclick="exportExcel()">📊 Export Excel (.xlsx)</button>
-      <button class="btn btn-outline" onclick="exportCSV()">📄 Export CSV</button>
-      <button class="btn btn-outline" onclick="exportJSON()">{ } Export JSON</button>
-      <button class="btn btn-outline" onclick="copyToClipboard()">📋 Salin ke Clipboard</button>
-    </div>
-  </div>
+</div>
 
 </main>
 
-<!-- MODAL TAMBAH MANUAL -->
-<div class="modal-overlay" id="modalOverlay">
+<!-- MODAL -->
+<div class="mbg" id="modalBg">
   <div class="modal">
-    <div class="modal-title">➕ Tambah Data Manual</div>
-    <div class="form-group">
-      <label class="form-label">No Dokumen</label>
-      <input class="form-input" id="inpDokumen" placeholder="Contoh: IN/001/01/2026/ADA001">
+    <div class="mtit" id="modalTitle">Tambah Data Manual</div>
+    <div class="fg" style="grid-column:1/-1;">
+      <label class="fl">No Dokumen</label>
+      <input class="fi" id="inpDok" placeholder="IN/001/01/2026/ADA001" style="width:100%;">
     </div>
-    <div class="form-group">
-      <label class="form-label">Tanggal</label>
-      <input class="form-input" id="inpTanggal" type="date">
+    <div class="frow">
+      <div class="fg">
+        <label class="fl">Tanggal</label>
+        <input class="fi" id="inpTgl" type="date">
+      </div>
+      <div class="fg">
+        <label class="fl">Nopol</label>
+        <input class="fi" id="inpNopol" placeholder="BE 1234 AB">
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Nopol</label>
-      <input class="form-input" id="inpNopol" placeholder="Contoh: BE 1234 AB">
+    <div class="frow">
+      <div class="fg">
+        <label class="fl">Gapoktan / Pengirim</label>
+        <input class="fi" id="inpGap" placeholder="Nama Gapoktan">
+      </div>
+      <div class="fg">
+        <label class="fl">Kuantum</label>
+        <input class="fi" id="inpKuan" placeholder="1.000,00">
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Kuantum</label>
-      <input class="form-input" id="inpKuantum" placeholder="Contoh: 1.000,00">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal()">Batal</button>
-      <button class="btn btn-primary" onclick="addManual()">💾 Simpan</button>
+    <div class="mfooter">
+      <button class="btn bgh" onclick="closeModal()">Batal</button>
+      <button class="btn bp" onclick="saveModal()">💾 Simpan</button>
     </div>
   </div>
 </div>
 
 <!-- TOAST -->
 <div class="toast" id="toast">
-  <span id="toastIcon">✅</span>
-  <span id="toastMsg">Berhasil!</span>
+  <span id="tIco"></span><span id="tMsg"></span>
 </div>
 
 <script>
-// ============================================================
-// CONFIG & STATE
-// ============================================================
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-let allData = [];         // raw extracted data
-let filteredData = [];    // after filter/search
-let currentPage = 1;
-let sortCol = '';
-let sortDir = 1;
-let pendingFiles = [];    // files queued
+let allData=[],filteredData=[],pendingFiles=[],curPage=1,sortCol='',sortDir=1,editId=null;
 
-// ============================================================
-// DRAG & DROP
-// ============================================================
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
+/* DRAG DROP */
+const dz=document.getElementById('dropZone'),fi=document.getElementById('fileInput');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');queueFiles(Array.from(e.dataTransfer.files).filter(f=>f.type==='application/pdf'));});
+fi.addEventListener('change',()=>{queueFiles(Array.from(fi.files));fi.value='';});
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  handleFiles(Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf'));
-});
-fileInput.addEventListener('change', () => {
-  handleFiles(Array.from(fileInput.files));
-  fileInput.value = '';
-});
-
-// ============================================================
-// FILE HANDLING
-// ============================================================
-function handleFiles(files) {
-  if (!files.length) return;
-  files.forEach(f => {
-    if (!pendingFiles.find(p => p.name === f.name && p.size === f.size)) {
-      pendingFiles.push(f);
-    }
-  });
-  renderFileList();
-  processAllFiles();
+function queueFiles(files){
+  files.forEach(f=>{if(!pendingFiles.find(p=>p.name===f.name&&p.size===f.size))pendingFiles.push(f);});
+  renderQ();
 }
 
-function renderFileList() {
-  const fl = document.getElementById('fileList');
-  fl.innerHTML = '';
-  pendingFiles.forEach((f, i) => {
-    const chip = document.createElement('div');
-    chip.className = 'file-chip';
-    chip.innerHTML = `
-      <span class="chip-icon">📄</span>
-      <span>${f.name}</span>
-      <span class="chip-size">${(f.size/1024).toFixed(1)} KB</span>
-      <span class="chip-remove" onclick="removeFile(${i})">✕</span>
-    `;
-    fl.appendChild(chip);
+function renderQ(){
+  const fq=document.getElementById('fileQueue'),chips=document.getElementById('fileChips');
+  if(!pendingFiles.length){fq.style.display='none';return;}
+  fq.style.display='block';
+  document.getElementById('queueCount').textContent=pendingFiles.length+' file dipilih';
+  chips.innerHTML='';
+  pendingFiles.forEach((f,i)=>{
+    const c=document.createElement('div');c.className='fchip';
+    c.innerHTML=`<span>📄</span><span class="cn">${f.name}</span><span class="csz">${(f.size/1024).toFixed(0)} KB</span><span class="cdel" onclick="rmFile(${i})">×</span>`;
+    chips.appendChild(c);
   });
 }
 
-function removeFile(i) {
-  pendingFiles.splice(i, 1);
-  renderFileList();
-}
+function rmFile(i){pendingFiles.splice(i,1);renderQ();}
+function clearQueue(){pendingFiles=[];renderQ();}
+function addMore(){fi.click();}
 
-// ============================================================
-// PDF PROCESSING
-// ============================================================
-async function processAllFiles() {
-  if (!pendingFiles.length) return;
-  const progressBar = document.getElementById('progressBar');
-  const progressFill = document.getElementById('progressFill');
-  const progressLabel = document.getElementById('progressLabel');
-
-  progressBar.style.display = 'block';
-  progressLabel.style.display = 'block';
-
-  let total = pendingFiles.length;
-
-  for (let fi = 0; fi < pendingFiles.length; fi++) {
-    const file = pendingFiles[fi];
-    progressLabel.textContent = `Memproses: ${file.name} (${fi+1}/${total})...`;
-    progressFill.style.width = ((fi / total) * 100) + '%';
-    await processPDF(file);
+/* PROCESS */
+async function startProcessing(){
+  if(!pendingFiles.length)return;
+  document.getElementById('fileQueue').style.display='none';
+  document.getElementById('progWrap').style.display='block';
+  const total=pendingFiles.length;let done=0;
+  for(const f of pendingFiles){
+    setProg(Math.round((done/total)*90),`Membaca: ${f.name}`);
+    await processPDF(f);done++;
   }
-
-  progressFill.style.width = '100%';
-  progressLabel.textContent = '✅ Selesai!';
-  setTimeout(() => {
-    progressBar.style.display = 'none';
-    progressLabel.style.display = 'none';
-  }, 1500);
-
-  updateStats();
-  renderTable();
-  showToast('✅', `${total} file berhasil diproses! ${allData.length} record ditemukan.`, 'success');
+  setProg(100,'Selesai!');
+  await wait(600);
+  document.getElementById('progWrap').style.display='none';
+  document.getElementById('doneMsg').textContent=`${total} file diproses — ${allData.length} record ditemukan.`;
+  document.getElementById('doneBar').style.display='flex';
+  pendingFiles=[];renderQ();
+  updateStats();applyFilters();
+  document.getElementById('statsSec').style.display='block';
+  document.getElementById('tableSec').style.display='block';
+  toast2('✅',`${allData.length} record berhasil dimuat!`,'tg');
 }
 
-async function processPDF(file) {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+function setProg(p,m){
+  document.getElementById('progFill').style.width=p+'%';
+  document.getElementById('progPct').textContent=p+'%';
+  document.getElementById('progMsg').textContent=m;
+}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
-    for (let p = 1; p <= pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-
-      // Sort by Y position then X
-      const items = content.items.sort((a, b) => {
-        const yDiff = Math.round(b.transform[5]) - Math.round(a.transform[5]);
-        return yDiff !== 0 ? yDiff : a.transform[4] - b.transform[4];
+async function processPDF(file){
+  try{
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const content=await page.getTextContent();
+      const items=content.items.sort((a,b)=>{
+        const dy=Math.round(b.transform[5])-Math.round(a.transform[5]);
+        return dy!==0?dy:a.transform[4]-b.transform[4];
       });
-
-      const text = items.map(i => i.str).join(' ');
-
-      // Pisah per blok dokumen
-      const blocks = text.split(/(IN\/\d+\/\d+\/\d{4}\/ADA\d+)/i);
-
-      for (let i = 1; i < blocks.length; i += 2) {
-        const dokumen = blocks[i].trim();
-        const body = (blocks[i] + (blocks[i+1] || '')).replace(/\s+/g, ' ');
-
-        const tanggalM = body.match(/(\d{2}[-\/]\d{2}[-\/]\d{4})/);
-        const nopolM = body.match(/\b([A-Z]{1,2}\s?\d{3,4}\s?[A-Z]{1,3})\b/);
-        const kuantumM = body.match(/(\d{1,3}(?:[.,]\d{3})*[.,]00)/);
-
-        // Normalisasi nopol (uppercase, spasi bersih)
-        let nopol = nopolM ? nopolM[1].toUpperCase().replace(/\s+/g, ' ').trim() : '';
-
-        // Normalisasi tanggal
-        let tanggal = tanggalM ? tanggalM[1] : '';
-
-        const record = {
-          id: Date.now() + Math.random(),
-          dokumen,
-          tanggal,
-          nopol,
-          kuantum: kuantumM ? kuantumM[1] : '',
-          sumber: file.name,
-          manual: false
-        };
-
-        // Cek duplikat dokumen
-        if (!allData.find(d => d.dokumen === dokumen)) {
-          allData.push(record);
-        }
+      const text=items.map(i=>i.str).join(' ');
+      // Split per dokumen — regex sama persis dengan Python (tahun 2026 hardcoded sesuai data)
+      const blocks=text.split(/(IN\/\d+\/\d+\/2026\/ADA\d+)/i);
+      for(let i=1;i<blocks.length;i+=2){
+        const dok=blocks[i].trim();
+        const body=(blocks[i]+(blocks[i+1]||'')).replace(/\s+/g,' ');
+        if(allData.find(d=>d.dokumen===dok))continue;
+        // Tanggal: DD-MM-YYYY
+        const tM=body.match(/(\d{2}-\d{2}-\d{4})/);
+        // Nopol: buang dulu teks nomor dokumen agar tidak ikut match
+        const bodyClean=body.replace(/IN\/\S+/gi,'');
+        const nM=bodyClean.match(/\b([A-Z]{1,2}\s?\d{3,4}\s?[A-Z]{1,3})\b/);
+        // Kuantum: format Indonesia 1.000,00 s/d 99.999,00 (sama dengan Python)
+        const kM=body.match(/(\d{1,2}[.,]\d{3},00)/);
+        const gM=body.match(/(?:Kepada|Pengirim|Gapoktan|Kelompok\s*Tani|Penerima)[:\s]+([A-Za-z][A-Za-z\s\-\.]{2,40}?)(?=\s{2,}|\d|IN\/|$)/i);
+        const tanggal=tM?tM[1]:'';
+        allData.push({
+          id:Date.now()+Math.random(),
+          dokumen:dok,tanggal,
+          tanggalISO:tanggal?toISO(tanggal):'',
+          nopol:nM?nM[1].toUpperCase().replace(/\s+/g,' ').trim():'',
+          gapoktan:gM?gM[1].trim():'',
+          kuantum:kM?kM[1]:'',
+          sumber:file.name
+        });
       }
     }
-  } catch(err) {
-    showToast('⚠️', `Gagal membaca ${file.name}: ${err.message}`, 'error');
-  }
+  }catch(e){console.error('PDF error:',e);toast2('⚠️',`Gagal baca: ${file.name}`,'tr');}
 }
 
-// ============================================================
-// STATS
-// ============================================================
-function updateStats() {
-  const total = allData.length;
-  const nopols = allData.map(d => d.nopol).filter(Boolean);
-  const uniqueNopols = [...new Set(nopols)];
-
-  // Count duplicates
-  const nopolCount = {};
-  nopols.forEach(n => { nopolCount[n] = (nopolCount[n]||0)+1; });
-  const dupCount = Object.values(nopolCount).filter(c => c > 1).length;
-
-  // Sum kuantum
-  let totalQ = 0;
-  allData.forEach(d => {
-    const q = parseFloat((d.kuantum||'0').replace(/\./g,'').replace(',', '.'));
-    if (!isNaN(q)) totalQ += q;
-  });
-
-  const files = [...new Set(allData.map(d => d.sumber))].length;
-
-  document.getElementById('statTotal').textContent = total;
-  document.getElementById('statNopol').textContent = uniqueNopols.length;
-  document.getElementById('statKuantum').textContent = totalQ.toLocaleString('id-ID', {maximumFractionDigits: 0});
-  document.getElementById('statDup').textContent = dupCount;
-  document.getElementById('statFiles').textContent = files;
-
-  document.getElementById('statsSection').style.display = 'block';
-  document.getElementById('tableSection').style.display = 'block';
-
-  // Populate nopol filter
-  const sel = document.getElementById('filterNopol');
-  const prev = sel.value;
-  sel.innerHTML = '<option value="">Semua Nopol</option>';
-  uniqueNopols.sort().forEach(n => {
-    const opt = document.createElement('option');
-    opt.value = n; opt.textContent = n;
-    sel.appendChild(opt);
-  });
-  if (prev) sel.value = prev;
+function toISO(t){
+  if(!t)return'';
+  const p=t.replace(/\//g,'-').split('-');
+  if(p.length!==3)return'';
+  return p[0].length===2?`${p[2]}-${p[1]}-${p[0]}`:t;
 }
 
-// ============================================================
-// TABLE RENDER
-// ============================================================
-function applyFiltersAndRender() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  const nopolF = document.getElementById('filterNopol').value;
-  const dupF = document.getElementById('filterDup').value;
+function resetAll(){
+  if(!confirm('Hapus semua data dan mulai ulang?'))return;
+  allData=[];filteredData=[];pendingFiles=[];sortCol='';sortDir=1;curPage=1;
+  document.getElementById('doneBar').style.display='none';
+  document.getElementById('statsSec').style.display='none';
+  document.getElementById('tableSec').style.display='none';
+  document.getElementById('progWrap').style.display='none';
+  renderQ();
+  toast2('🔄','Data direset. Siap upload baru!','tb2');
+}
 
-  // Count duplicates
-  const nopolCount = {};
-  allData.forEach(d => { if(d.nopol) nopolCount[d.nopol] = (nopolCount[d.nopol]||0)+1; });
+/* STATS */
+function updateStats(){
+  const nopols=allData.map(d=>d.nopol).filter(Boolean);
+  const unik=[...new Set(nopols)];
+  const nc={};nopols.forEach(n=>nc[n]=(nc[n]||0)+1);
+  const dups=Object.values(nc).filter(c=>c>1).length;
+  let tq=0;allData.forEach(d=>{const q=parseFloat((d.kuantum||'0').replace(/\./g,'').replace(',','.'));if(!isNaN(q))tq+=q;});
+  const files=[...new Set(allData.map(d=>d.sumber))].length;
+  document.getElementById('sStat').textContent=allData.length;
+  document.getElementById('sNopol').textContent=unik.length;
+  document.getElementById('sKuantum').textContent=Math.round(tq).toLocaleString('id-ID');
+  document.getElementById('sDup').textContent=dups;
+  document.getElementById('sFiles').textContent=files;
+  const sel=document.getElementById('filterNopol');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">Semua Nopol</option>';
+  unik.sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+  if(prev)sel.value=prev;
+}
 
-  filteredData = allData.filter(d => {
-    const matchQ = !q ||
-      d.dokumen.toLowerCase().includes(q) ||
-      d.nopol.toLowerCase().includes(q) ||
-      d.tanggal.includes(q) ||
-      d.sumber.toLowerCase().includes(q);
-    const matchNopol = !nopolF || d.nopol === nopolF;
-    const isDup = nopolCount[d.nopol] > 1;
-    const matchDup = !dupF || (dupF === 'dup' ? isDup : !isDup);
-    return matchQ && matchNopol && matchDup;
+/* FILTER */
+function applyFilters(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const nf=document.getElementById('filterNopol').value;
+  const df=document.getElementById('filterDup').value;
+  const from=document.getElementById('filterFrom').value;
+  const to=document.getElementById('filterTo').value;
+  const nc={};allData.forEach(d=>{if(d.nopol)nc[d.nopol]=(nc[d.nopol]||0)+1;});
+  filteredData=allData.filter(d=>{
+    const mq=!q||d.dokumen.toLowerCase().includes(q)||d.nopol.toLowerCase().includes(q)||d.tanggal.includes(q)||(d.gapoktan||'').toLowerCase().includes(q)||(d.sumber||'').toLowerCase().includes(q);
+    const mn=!nf||d.nopol===nf;
+    const idup=nc[d.nopol]>1;
+    const md=!df||(df==='dup'?idup:!idup);
+    const iso=d.tanggalISO;
+    const mf=!from||(iso&&iso>=from);
+    const mt=!to||(iso&&iso<=to);
+    return mq&&mn&&md&&mf&&mt;
   });
-
-  // Sort
-  if (sortCol) {
-    filteredData.sort((a, b) => {
-      let va = a[sortCol] || '', vb = b[sortCol] || '';
-      if (sortCol === 'kuantum') {
-        va = parseFloat(va.replace(/\./g,'').replace(',','.')) || 0;
-        vb = parseFloat(vb.replace(/\./g,'').replace(',','.')) || 0;
-      }
-      return va > vb ? sortDir : va < vb ? -sortDir : 0;
+  if(sortCol){
+    filteredData.sort((a,b)=>{
+      let va=a[sortCol]||'',vb=b[sortCol]||'';
+      if(sortCol==='kuantum'){va=parseFloat(va.replace(/\./g,'').replace(',','.'))||0;vb=parseFloat(vb.replace(/\./g,'').replace(',','.'))||0;}
+      if(sortCol==='tanggal'){va=a.tanggalISO||'';vb=b.tanggalISO||'';}
+      return va>vb?sortDir:va<vb?-sortDir:0;
     });
   }
-
-  currentPage = 1;
-  renderTable();
+  curPage=1;renderTable();
 }
 
-function renderTable() {
-  const nopolCount = {};
-  allData.forEach(d => { if(d.nopol) nopolCount[d.nopol] = (nopolCount[d.nopol]||0)+1; });
-
-  const ps = document.getElementById('pageSize').value;
-  const pageSize = ps === 'all' ? filteredData.length : parseInt(ps);
-  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
-
-  if (currentPage > totalPages) currentPage = totalPages;
-  const start = (currentPage - 1) * pageSize;
-  const end = Math.min(start + pageSize, filteredData.length);
-  const pageData = filteredData.slice(start, end);
-
-  const tbody = document.getElementById('tableBody');
-  const emptyState = document.getElementById('emptyState');
-
-  document.getElementById('tableCount').textContent = `${filteredData.length} record`;
-
-  if (!pageData.length) {
-    tbody.innerHTML = '';
-    emptyState.style.display = 'block';
-    document.getElementById('paginationBar').style.display = 'none';
-    return;
-  }
-
-  emptyState.style.display = 'none';
-  document.getElementById('paginationBar').style.display = 'flex';
-
-  tbody.innerHTML = '';
-  pageData.forEach((d, idx) => {
-    const isDup = nopolCount[d.nopol] > 1;
-    const tr = document.createElement('tr');
-    if (isDup) tr.classList.add('duplicate');
-    tr.innerHTML = `
-      <td style="color:var(--text-muted)">${start + idx + 1}</td>
-      <td class="td-dokumen">${d.dokumen}</td>
-      <td class="td-tanggal">${d.tanggal || '—'}</td>
-      <td><span class="nopol-badge">${d.nopol || '—'}</span>${isDup ? '<span class="dup-tag">DUP</span>' : ''}</td>
-      <td class="td-kuantum">${d.kuantum || '—'}</td>
-      <td style="color:var(--text-muted);font-size:11px">${d.sumber}</td>
-      <td>
-        <button class="btn btn-outline" style="padding:6px 10px;font-size:11px" onclick="editRow('${d.id}')">✏️</button>
-        <button class="btn btn-danger" style="padding:6px 10px;font-size:11px;margin-left:4px" onclick="deleteRow('${d.id}')">🗑</button>
-      </td>
-    `;
+function renderTable(){
+  const nc={};allData.forEach(d=>{if(d.nopol)nc[d.nopol]=(nc[d.nopol]||0)+1;});
+  const psv=document.getElementById('pageSize').value;
+  const ps=psv==='all'?filteredData.length||1:parseInt(psv);
+  const totalP=Math.ceil(filteredData.length/ps)||1;
+  if(curPage>totalP)curPage=totalP;
+  const start=(curPage-1)*ps,end=Math.min(start+ps,filteredData.length);
+  const page=filteredData.slice(start,end);
+  document.getElementById('tableCount').textContent=filteredData.length+' record';
+  const tbody=document.getElementById('tableBody'),empty=document.getElementById('emptyState'),pb=document.getElementById('pagiBar');
+  if(!page.length){tbody.innerHTML='';empty.style.display='block';pb.style.display='none';return;}
+  empty.style.display='none';pb.style.display='flex';
+  tbody.innerHTML='';
+  page.forEach((d,idx)=>{
+    const dup=nc[d.nopol]>1;
+    const tr=document.createElement('tr');
+    if(dup)tr.classList.add('idup');
+    tr.innerHTML=`<td class="tno">${start+idx+1}</td><td class="tdok">${d.dokumen}</td><td class="tdate">${d.tanggal||'—'}</td><td><span class="npill">${d.nopol||'—'}${dup?'<span class="dpill">DUP</span>':''}</span></td><td class="tgap" title="${d.gapoktan||''}">${d.gapoktan||'<span style="color:var(--g300)">—</span>'}</td><td class="tkuan">${d.kuantum||'—'}</td><td class="tsrc" title="${d.sumber}">${d.sumber}</td><td><div class="acell"><button class="bico" title="Edit" onclick="openModal('${d.id}')">✏️</button><button class="bico del" title="Hapus" onclick="delRow('${d.id}')">🗑</button></div></td>`;
     tbody.appendChild(tr);
   });
+  document.getElementById('pagiInfo').textContent=`${start+1}–${end} dari ${filteredData.length}`;
+  const pbtns=document.getElementById('pagiBtns');pbtns.innerHTML='';
+  const mk=(l,p,a)=>{const b=document.createElement('button');b.className='pbtn'+(a?' active':'');b.textContent=l;b.onclick=()=>{curPage=p;renderTable();};return b;};
+  if(curPage>1)pbtns.appendChild(mk('‹',curPage-1,false));
+  for(let i=Math.max(1,curPage-2);i<=Math.min(totalP,curPage+2);i++)pbtns.appendChild(mk(i,i,i===curPage));
+  if(curPage<totalP)pbtns.appendChild(mk('›',curPage+1,false));
+}
 
-  // Page info
-  document.getElementById('pageInfo').textContent =
-    `Menampilkan ${start+1}–${end} dari ${filteredData.length} record`;
+/* SORT */
+function sortBy(col){
+  if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sa','sd'));
+  event.target.classList.add(sortDir===1?'sa':'sd');
+  applyFilters();
+}
 
-  // Pagination buttons
-  const pageBtns = document.getElementById('pageBtns');
-  pageBtns.innerHTML = '';
+/* EDIT/DELETE */
+function delRow(id){allData=allData.filter(d=>String(d.id)!==String(id));updateStats();applyFilters();toast2('🗑','Record dihapus.','');}
 
-  const makePB = (label, page, active) => {
-    const btn = document.createElement('button');
-    btn.className = 'page-btn' + (active ? ' active' : '');
-    btn.textContent = label;
-    btn.onclick = () => { currentPage = page; renderTable(); };
-    return btn;
-  };
-
-  if (currentPage > 1) pageBtns.appendChild(makePB('‹', currentPage-1, false));
-
-  const range = [];
-  for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) {
-    range.push(i);
+/* MODAL */
+function openModal(id){
+  editId=id;
+  document.getElementById('modalTitle').textContent=id?'Edit Data':'Tambah Data Manual';
+  if(id){
+    const d=allData.find(x=>String(x.id)===String(id));if(!d)return;
+    document.getElementById('inpDok').value=d.dokumen;
+    document.getElementById('inpTgl').value=d.tanggalISO||'';
+    document.getElementById('inpNopol').value=d.nopol;
+    document.getElementById('inpGap').value=d.gapoktan||'';
+    document.getElementById('inpKuan').value=d.kuantum;
+  }else{
+    ['inpDok','inpNopol','inpGap','inpKuan'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('inpTgl').value='';
   }
-  range.forEach(p => pageBtns.appendChild(makePB(p, p, p === currentPage)));
-
-  if (currentPage < totalPages) pageBtns.appendChild(makePB('›', currentPage+1, false));
+  document.getElementById('modalBg').classList.add('open');
+  document.getElementById('inpDok').focus();
 }
 
-// ============================================================
-// SORT
-// ============================================================
-const colMap = { no: 'id', dokumen: 'dokumen', tanggal: 'tanggal', nopol: 'nopol', kuantum: 'kuantum', sumber: 'sumber' };
+function closeModal(){document.getElementById('modalBg').classList.remove('open');editId=null;}
 
-function sortBy(col) {
-  const key = colMap[col] || col;
-  if (sortCol === key) sortDir *= -1;
-  else { sortCol = key; sortDir = 1; }
-
-  document.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc','sort-desc'));
-  const idx = Object.keys(colMap).indexOf(col);
-  const ths = document.querySelectorAll('th');
-  if (ths[idx+1]) {
-    ths[idx+1].classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+function saveModal(){
+  const dok=document.getElementById('inpDok').value.trim();
+  if(!dok){toast2('⚠️','No Dokumen wajib diisi!','tr');return;}
+  const rawT=document.getElementById('inpTgl').value;
+  let tanggal='',tanggalISO='';
+  if(rawT){tanggalISO=rawT;const p=rawT.split('-');tanggal=`${p[2]}-${p[1]}-${p[0]}`;}
+  const nopol=document.getElementById('inpNopol').value.trim().toUpperCase().replace(/\s+/g,' ');
+  const gapoktan=document.getElementById('inpGap').value.trim();
+  const kuantum=document.getElementById('inpKuan').value.trim();
+  if(editId){
+    const idx=allData.findIndex(x=>String(x.id)===String(editId));
+    if(idx!==-1)allData[idx]={...allData[idx],dokumen:dok,tanggal,tanggalISO,nopol,gapoktan,kuantum};
+    toast2('✅','Data diperbarui!','tg');
+  }else{
+    allData.push({id:Date.now()+Math.random(),dokumen:dok,tanggal,tanggalISO,nopol,gapoktan,kuantum,sumber:'Manual'});
+    toast2('✅','Data ditambahkan!','tg');
   }
-
-  applyFiltersAndRender();
+  closeModal();updateStats();applyFilters();
 }
 
-// ============================================================
-// EDIT & DELETE
-// ============================================================
-let editingId = null;
+/* EXPORT */
+function getRows(){return filteredData.map((d,i)=>({'No':i+1,'No Dokumen':d.dokumen,'Tanggal':d.tanggal,'Nopol':d.nopol,'Gapoktan / Pengirim':d.gapoktan,'Kuantum':d.kuantum,'Sumber File':d.sumber}));}
 
-function editRow(id) {
-  const d = allData.find(x => String(x.id) === String(id));
-  if (!d) return;
-  editingId = id;
-  document.getElementById('inpDokumen').value = d.dokumen;
-  // Convert tanggal dd-mm-yyyy to yyyy-mm-dd for input[date]
-  const parts = d.tanggal.split('-');
-  if (parts.length === 3) {
-    document.getElementById('inpTanggal').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
-  } else {
-    document.getElementById('inpTanggal').value = '';
-  }
-  document.getElementById('inpNopol').value = d.nopol;
-  document.getElementById('inpKuantum').value = d.kuantum;
-  openModal();
+function exportExcel(){
+  const rows=getRows();if(!rows.length){toast2('⚠️','Tidak ada data.','tr');return;}
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:5},{wch:30},{wch:14},{wch:16},{wch:24},{wch:14},{wch:28}];
+  XLSX.utils.book_append_sheet(wb,ws,'Rekap SJ');
+  const nc={},nq={};
+  allData.forEach(d=>{if(!d.nopol)return;nc[d.nopol]=(nc[d.nopol]||0)+1;const q=parseFloat((d.kuantum||'0').replace(/\./g,'').replace(',','.'))||0;nq[d.nopol]=(nq[d.nopol]||0)+q;});
+  const ws2=XLSX.utils.json_to_sheet(Object.keys(nc).sort().map(n=>({'Nopol':n,'Jumlah Transaksi':nc[n],'Total Kuantum':Math.round(nq[n]||0)})));
+  ws2['!cols']=[{wch:16},{wch:20},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Rekap per Nopol');
+  XLSX.writeFile(wb,`rekap_sj_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
+  toast2('📊','Excel diunduh!','tg');
 }
 
-function deleteRow(id) {
-  allData = allData.filter(x => String(x.id) !== String(id));
-  updateStats();
-  applyFiltersAndRender();
-  showToast('🗑', 'Record dihapus.', 'success');
+function exportCSV(){
+  const rows=getRows();if(!rows.length){toast2('⚠️','Tidak ada data.','tr');return;}
+  const h=Object.keys(rows[0]).join(';');
+  const b=rows.map(r=>Object.values(r).map(v=>`"${v}"`).join(';')).join('\n');
+  dl('rekap_sj.csv',h+'\n'+b,'text/csv');toast2('📄','CSV diunduh!','tg');
 }
 
-function clearAll() {
-  if (!confirm('Hapus semua data?')) return;
-  allData = [];
-  pendingFiles = [];
-  renderFileList();
-  document.getElementById('statsSection').style.display = 'none';
-  document.getElementById('tableSection').style.display = 'none';
-  showToast('🗑', 'Semua data dihapus.', 'success');
+function exportJSON(){
+  const rows=getRows();if(!rows.length){toast2('⚠️','Tidak ada data.','tr');return;}
+  dl('rekap_sj.json',JSON.stringify(rows,null,2),'application/json');toast2('{ }','JSON diunduh!','tg');
 }
 
-// ============================================================
-// MODAL
-// ============================================================
-function openModal() {
-  document.getElementById('modalOverlay').classList.add('open');
+function copyClip(){
+  const rows=getRows();
+  const txt=[Object.keys(rows[0]).join('\t'),...rows.map(r=>Object.values(r).join('\t'))].join('\n');
+  navigator.clipboard.writeText(txt).then(()=>toast2('📋','Tersalin ke clipboard!','tb2'));
 }
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-  editingId = null;
-  ['inpDokumen','inpNopol','inpKuantum'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('inpTanggal').value = '';
+function dl(name,content,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+content],{type}));
+  a.download=name;a.click();
 }
 
-function addManual() {
-  const dok = document.getElementById('inpDokumen').value.trim();
-  const rawDate = document.getElementById('inpTanggal').value;
-  const nopol = document.getElementById('inpNopol').value.trim().toUpperCase();
-  const kuantum = document.getElementById('inpKuantum').value.trim();
-
-  if (!dok) { showToast('⚠️', 'No Dokumen wajib diisi!', 'error'); return; }
-
-  // Convert yyyy-mm-dd to dd-mm-yyyy
-  let tanggal = '';
-  if (rawDate) {
-    const parts = rawDate.split('-');
-    tanggal = `${parts[2]}-${parts[1]}-${parts[0]}`;
-  }
-
-  if (editingId) {
-    const idx = allData.findIndex(x => String(x.id) === String(editingId));
-    if (idx !== -1) {
-      allData[idx] = { ...allData[idx], dokumen: dok, tanggal, nopol, kuantum };
-    }
-    showToast('✅', 'Data berhasil diperbarui!', 'success');
-  } else {
-    allData.push({ id: Date.now() + Math.random(), dokumen: dok, tanggal, nopol, kuantum, sumber: 'Manual', manual: true });
-    showToast('✅', 'Data berhasil ditambahkan!', 'success');
-  }
-
-  closeModal();
-  updateStats();
-  applyFiltersAndRender();
+/* TOAST */
+let tTmr;
+function toast2(ico,msg,cls){
+  const t=document.getElementById('toast');
+  document.getElementById('tIco').textContent=ico;
+  document.getElementById('tMsg').textContent=msg;
+  t.className='toast show '+(cls||'');
+  clearTimeout(tTmr);tTmr=setTimeout(()=>t.classList.remove('show'),3200);
 }
 
-// ============================================================
-// EXPORT
-// ============================================================
-function getExportData() {
-  return filteredData.map((d, i) => ({
-    'No': i+1,
-    'No Dokumen': d.dokumen,
-    'Tanggal': d.tanggal,
-    'Nopol': d.nopol,
-    'Kuantum': d.kuantum,
-    'Sumber File': d.sumber
-  }));
-}
-
-function exportExcel() {
-  const data = getExportData();
-  if (!data.length) { showToast('⚠️', 'Tidak ada data untuk diekspor.', 'error'); return; }
-
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(data);
-
-  // Style header width
-  ws['!cols'] = [
-    {wch:5}, {wch:30}, {wch:14}, {wch:16}, {wch:14}, {wch:30}
-  ];
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Rekap Surat Jalan');
-
-  // Sheet statistik
-  const nopolCount = {};
-  allData.forEach(d => { if(d.nopol) nopolCount[d.nopol] = (nopolCount[d.nopol]||0)+1; });
-  const statRows = Object.entries(nopolCount).map(([nopol, count]) => {
-    const totalQ = allData.filter(d => d.nopol === nopol)
-      .reduce((s, d) => s + (parseFloat((d.kuantum||'0').replace(/\./g,'').replace(',','.')) || 0), 0);
-    return { 'Nopol': nopol, 'Jumlah Transaksi': count, 'Total Kuantum': totalQ };
-  });
-  const ws2 = XLSX.utils.json_to_sheet(statRows);
-  ws2['!cols'] = [{wch:18},{wch:20},{wch:16}];
-  XLSX.utils.book_append_sheet(wb, ws2, 'Rekap per Nopol');
-
-  XLSX.writeFile(wb, `rekap_surat_jalan_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
-  showToast('📊', 'File Excel berhasil diunduh!', 'success');
-}
-
-function exportCSV() {
-  const data = getExportData();
-  if (!data.length) { showToast('⚠️', 'Tidak ada data.', 'error'); return; }
-  const headers = Object.keys(data[0]).join(';');
-  const rows = data.map(r => Object.values(r).map(v => `"${v}"`).join(';'));
-  const csv = [headers, ...rows].join('\n');
-  download('rekap_sj.csv', csv, 'text/csv');
-  showToast('📄', 'CSV berhasil diunduh!', 'success');
-}
-
-function exportJSON() {
-  const data = getExportData();
-  if (!data.length) { showToast('⚠️', 'Tidak ada data.', 'error'); return; }
-  download('rekap_sj.json', JSON.stringify(data, null, 2), 'application/json');
-  showToast('{ }', 'JSON berhasil diunduh!', 'success');
-}
-
-function copyToClipboard() {
-  const data = getExportData();
-  if (!data.length) return;
-  const text = [
-    Object.keys(data[0]).join('\t'),
-    ...data.map(r => Object.values(r).join('\t'))
-  ].join('\n');
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('📋', 'Data tersalin ke clipboard!', 'success');
-  });
-}
-
-function download(name, content, type) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], { type }));
-  a.download = name;
-  a.click();
-}
-
-// ============================================================
-// TOAST
-// ============================================================
-let toastTimer;
-function showToast(icon, msg, type = 'success') {
-  const t = document.getElementById('toast');
-  document.getElementById('toastIcon').textContent = icon;
-  document.getElementById('toastMsg').textContent = msg;
-  t.className = 'toast show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// ============================================================
-// EVENT LISTENERS
-// ============================================================
-document.getElementById('searchInput').addEventListener('input', applyFiltersAndRender);
-document.getElementById('filterNopol').addEventListener('change', applyFiltersAndRender);
-document.getElementById('filterDup').addEventListener('change', applyFiltersAndRender);
-document.getElementById('pageSize').addEventListener('change', applyFiltersAndRender);
-
-document.getElementById('modalOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
+/* EVENTS */
+['searchInput','filterNopol','filterDup','filterFrom','filterTo','pageSize'].forEach(id=>{
+  document.getElementById(id).addEventListener(id==='searchInput'?'input':'change',applyFilters);
 });
-
-// Close on Escape
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
-});
+document.getElementById('modalBg').addEventListener('click',e=>{if(e.target===document.getElementById('modalBg'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 </script>
 </body>
 </html>
